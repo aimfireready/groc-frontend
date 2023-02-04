@@ -1,55 +1,99 @@
+/* eslint-disable multiline-ternary */
 /* eslint-disable react/prop-types */
-import React from 'react'
-import PropTypes from 'prop-types'
+/* eslint-disable no-unused-vars */
+import React, { useEffect, useState } from 'react'
 import { Button } from 'reactstrap'
+import { ClockLoader } from 'react-spinners'
 
-const HeaderRow = (props) => {
-  const section = props.section
-  return (
-    <tr>
-      <th colSpan='2'>{section}</th>
-    </tr>
-  )
+// const HeaderRow = (props) => {
+//   const section = props.section
+//   return (
+//     <tr>
+//       <th
+//         colSpan='6'
+//         className='table-primary'
+//       >
+//         {section}
+//       </th>
+//     </tr>
+//   )
+// }
+
+const selectStore = async (e) => {
+  const BASE_URL = 'https://sheet.best/api/sheets/2e4d58b8-427d-42f8-90d1-9f8f5393ad11/tabs/'
+  const [items, setItems] = useState([])
+  const store = e.target.id
+  // TODO: fetch list for target store and update ItemTable
+  await fetch(BASE_URL + store)
+    .then((response) => response.json())
+    .then((result) => {
+      setItems(result)
+    })
+    .catch((e) => {
+      console.error(e)
+    })
 }
 
 const ItemRow = (props) => {
   const item = props.item
   return (
     <tr>
-      <td>{item.title}</td>
+      <td>{item.name}</td>
       <td>{item.on_hand_qty}</td>
       <td>{item.target_qty}</td>
       <td>{item.buy_qty}</td>
       <td>{item.updated}</td>
       <td>
-        <Button color='primary'>Edit</Button> <Button color='danger'>Delete</Button>{' '}
+        <Button
+          color='primary'
+          size='sm'
+          id={item.id}
+        >
+          Edit
+        </Button>{' '}
+        {/* <Button
+          color='danger'
+          size='sm'
+        >
+          Delete
+        </Button>{' '} */}
+        {/* 2023-01-31 Maybe move the delete button to a modal since it ought to be rarely used */}
       </td>
     </tr>
   )
 }
 
-const ItemTable = (props) => {
-  const items = props.items
-  const rows = []
-  let lastSection = null
+// const TbodyData = (props) => {
+//   return props.items.map((item) => (
+//     <ItemRow
+//       item={item}
+//       key={item.id}
+//     />
+//   ))
+// }
 
-  items.forEach((item) => {
-    if (item.section !== lastSection) {
-      rows.push(
-        <HeaderRow
-          section={item.section}
-          key={item.section}
-        />
-      )
+const ItemTable = () => {
+  const BASE_URL = 'https://sheet.best/api/sheets/2e4d58b8-427d-42f8-90d1-9f8f5393ad11/tabs/'
+  const [ready, setReady] = useState(0)
+  const [items, setItems] = useState([])
+  const [activeStore, setActiveStore] = useState('Aldi')
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setReady(false)
+      await fetch(BASE_URL + activeStore)
+        .then((response) => response.json())
+        .then((result) => {
+          setItems(result)
+          setReady(true)
+        })
+        .catch((e) => {
+          console.error(e)
+          setReady(true)
+        })
     }
-    rows.push(
-      <ItemRow
-        item={item}
-        key={item.id}
-      />
-    )
-    lastSection = item.section
-  })
+    fetchData()
+  }, [])
 
   return (
     <table className='table table-striped'>
@@ -63,13 +107,21 @@ const ItemTable = (props) => {
           <th className='col'>Actions</th>
         </tr>
       </thead>
-      <tbody>{rows}</tbody>
+      <tbody>
+        {items === null ? (
+          <ClockLoader />
+        ) : (
+          items.map((item) => (
+            <ItemRow
+              item={item}
+              key={item.id}
+            />
+            // eslint-disable-next-line indent
+          ))
+        )}
+      </tbody>
     </table>
   )
-}
-
-ItemTable.propTypes = {
-  data: PropTypes.object
 }
 
 export default ItemTable
